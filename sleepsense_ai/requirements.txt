@@ -1,0 +1,32 @@
+# ═══════════════════════════════════════════════
+# SleepSense AI — requirements.txt
+# Install:  pip install -r requirements.txt
+# ═══════════════════════════════════════════════
+
+flask==3.0.0
+flask-sqlalchemy==3.1.1
+flask-bcrypt==1.0.1
+flask-cors==4.0.0
+mysql-connector-python==8.3.0
+scikit-learn==1.4.0
+pandas==2.2.0
+numpy==1.26.3
+gunicorn==21.2.0
+
+# ═══════════════════════════════════════════════
+# QUICK SETUP
+# ═══════════════════════════════════════════════
+# python -m venv venv
+# source venv/bin/activate    (Mac/Linux)
+# venv\Scripts\activate       (Windows)
+# pip install -r requirements.txt
+# python app.py
+# Open: http://localhost:5000
+#
+# Admin Panel: http://localhost:5000/admin-panel
+#
+# DEFAULT CREDENTIALS
+#   Admin   → admin@sleepsense.ai  / Admin@123
+#   Patient → patient@demo.com     / demo123
+#   Doctor  → doctor@demo.com      / demo123
+# ═══════════════════════════════════════════════

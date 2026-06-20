@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SleepSense AI — Sleep Disorder Prediction</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07080f;--bg2:#0d0f1c;--bg3:#131627;
+  --border:rgba(99,120,255,.15);--accent:#6378ff;--accent2:#a78bfa;
+  --green:#22d3a0;--red:#f43f5e;--yellow:#fbbf24;
+  --text:#e2e8f0;--muted:#64748b;
+  --radius:14px;
+  --font-head:'Syne',sans-serif;
+  --font-mono:'DM Mono',monospace;
+  --font-body:'DM Sans',sans-serif;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+button{cursor:pointer;font-family:var(--font-body)}
+input,select,textarea{font-family:var(--font-body)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+/* ── LOADING ── */
+#appLoading{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:20px;transition:opacity .5s}
+#appLoading.hide{opacity:0;pointer-events:none}
+.logo-anim{font-family:var(--font-head);font-size:2rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.spin{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── PAGE SECTIONS ── */
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* ════════════════════════════════════
+   AUTH PAGE
+════════════════════════════════════ */
+#authPage{display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--bg);position:relative;overflow:hidden}
+#authPage::before{content:'';position:absolute;top:-30%;left:-20%;width:600px;height:600px;background:radial-gradient(circle,rgba(99,120,255,.12) 0%,transparent 70%);pointer-events:none}
+#authPage::after{content:'';position:absolute;bottom:-20%;right:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(167,139,250,.08) 0%,transparent 70%);pointer-events:none}
+
+.auth-card{background:var(--bg2);border:1px solid var(--border);border-radius:20px;padding:40px 44px;width:100%;max-width:440px;position:relative;z-index:1;box-shadow:0 24px 80px rgba(0,0,0,.5)}
+.auth-logo{text-align:center;margin-bottom:28px}
+.auth-logo h1{font-family:var(--font-head);font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.auth-logo p{color:var(--muted);font-size:.85rem;margin-top:4px}
+
+.auth-tabs{display:flex;gap:0;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:28px}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:8px;font-size:.85rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all .2s}
+.auth-tab.active{background:var(--accent);color:#fff}
+
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:.75rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px}
+.form-group input,.form-group select{width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:11px 14px;font-size:.9rem;outline:none;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{border-color:var(--accent)}
+.form-group select option{background:var(--bg3)}
+
+.role-pills{display:flex;gap:8px;flex-wrap:wrap}
+.role-pill{flex:1;text-align:center;padding:9px;border-radius:9px;font-size:.8rem;font-weight:600;cursor:pointer;border:2px solid var(--border);color:var(--muted);transition:all .2s}
+.role-pill:hover{border-color:var(--accent);color:var(--text)}
+.role-pill.selected{border-color:var(--accent);background:rgba(99,120,255,.15);color:var(--accent)}
+
+.btn-auth{width:100%;padding:13px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:.95rem;font-weight:700;margin-top:8px;transition:opacity .2s,transform .2s}
+.btn-auth:hover{opacity:.9;transform:translateY(-1px)}
+.auth-err{color:var(--red);font-size:.8rem;margin-top:8px;text-align:center;min-height:18px}
+
+.demo-btns{margin-top:18px;display:flex;flex-direction:column;gap:7px}
+.demo-btns p{font-size:.72rem;color:var(--muted);text-align:center;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.demo-row{display:flex;gap:7px}
+.demo-btn{flex:1;padding:8px;border-radius:8px;font-size:.78rem;font-weight:600;border:1px solid var(--border);background:var(--bg3);color:var(--muted);transition:all .2s}
+.demo-btn:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ════════════════════════════════════
+   MAIN APP LAYOUT
+════════════════════════════════════ */
+#appPage{display:none}
+#appPage.active{display:flex}
+
+.sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:24px 0 16px;position:fixed;height:100vh;top:0;left:0;z-index:100}
+.sidebar-logo{padding:0 20px 22px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar-logo h2{font-family:var(--font-head);font-size:1.1rem;font-weight:800;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sidebar-logo span{font-size:.65rem;color:var(--muted);font-family:var(--font-mono)}
+
+.nav-sect{padding:5px 12px;font-size:.6rem;font-family:var(--font-mono);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:6px 0 3px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 20px;cursor:pointer;font-size:.84rem;color:var(--muted);transition:all .2s;border-left:3px solid transparent;font-weight:500}
+.nav-item:hover{color:var(--text);background:rgba(99,120,255,.05)}
+.nav-item.active{color:var(--accent);background:rgba(99,120,255,.1);border-left-color:var(--accent)}
+.nav-item .ni{font-size:.95rem;width:18px;text-align:center}
+
+.sidebar-footer{margin-top:auto;padding:14px 20px;border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}
+.user-info{display:flex;align-items:center;gap:9px}
+.user-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;font-family:var(--font-head)}
+.user-name{font-size:.82rem;font-weight:600}
+.user-role{font-size:.68rem;color:var(--muted);font-family:var(--font-mono)}
+.logout-btn{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:.78rem;cursor:pointer;padding:5px 0;transition:color .2s}
+.logout-btn:hover{color:var(--red)}
+
+.main-content{margin-left:220px;flex:1;padding:28px 32px;min-height:100vh;background:var(--bg)}
+
+/* ── TOPBAR ── */
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}
+.topbar h2{font-family:var(--font-head);font-size:1.5rem;font-weight:800;letter-spacing:-.5px}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.admin-link-btn{background:rgba(99,120,255,.12);border:1px solid rgba(99,120,255,.3);color:var(--accent);font-size:.75rem;padding:6px 12px;border-radius:8px;cursor:pointer;font-family:var(--font-mono);transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.admin-link-btn:hover{background:rgba(99,120,255,.22)}
+
+/* ── VIEWS ── */
+.view{display:none;animation:fadeIn .3s ease}
+.view.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ── CARDS ── */
+.card{background:rgba(13,15,28,.9);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+.card-title{font-family:var(--font-head);font-size:1rem;font-weight:700;margin-bottom:16px}
+
+/* ── KPI GRID ── */
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:24px}
+.kpi{background:rgba(13,15,28,.9);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:transform .2s}
+.kpi:hover{transform:translateY(-2px)}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--kc,var(--accent))}
+.kpi-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-family:var(--font-mono)}
+.kpi-val{font-size:1.9rem;font-family:var(--font-head);font-weight:800;color:var(--kc,var(--text));margin:5px 0 2px}
+.kpi-sub{font-size:.72rem;color:var(--muted)}
+
+/* ── EEG WAVE ── */
+.eeg-wrap{background:rgba(13,15,28,.9);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px;overflow:hidden}
+.eeg-label{font-size:.7rem;font-family:var(--font-mono);color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em}
+#eegCanvas{width:100%;height:60px;display:block}
+
+/* ── SLEEP STAGES ── */
+.stages-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.stage-card{background:rgba(13,15,28,.9);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;text-align:center}
+.stage-pct{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--sc,var(--accent))}
+.stage-name{font-size:.7rem;color:var(--muted);font-family:var(--font-mono);margin-top:4px}
+
+/* ── PREDICT FORM ── */
+.predict-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px}
+.predict-grid.three{grid-template-columns:1fr 1fr 1fr}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fg label{font-size:.7rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.fg input,.fg select{background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:10px 12px;font-size:.87rem;outline:none;transition:border-color .2s;width:100%}
+.fg input:focus,.fg select:focus{border-color:var(--accent)}
+.fg select option{background:var(--bg3)}
+.range-wrap{display:flex;align-items:center;gap:10px}
+.range-wrap input[type=range]{flex:1;accent-color:var(--accent)}
+.range-val{font-family:var(--font-mono);font-size:.85rem;min-width:24px;color:var(--accent);font-weight:600}
+
+.btn-predict{width:100%;padding:14px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;border-radius:10px;font-size:1rem;font-weight:700;transition:all .2s;margin-top:4px}
+.btn-predict:hover{opacity:.9;transform:translateY(-1px)}
+.btn-predict:disabled{opacity:.5;transform:none;cursor:not-allowed}
+
+/* ── RESULT CARD ── */
+.result-card{background:var(--bg2);border:2px solid var(--rc,var(--border));border-radius:var(--radius);padding:24px;margin-top:20px;animation:fadeIn .4s ease}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.result-label{font-family:var(--font-head);font-size:1.6rem;font-weight:800;color:var(--rc,var(--text))}
+.result-conf{font-family:var(--font-mono);font-size:.8rem;color:var(--muted)}
+.conf-bar-wrap{margin-bottom:16px}
+.conf-bar-track{height:8px;background:var(--bg3);border-radius:4px;overflow:hidden;margin-top:4px}
+.conf-bar-fill{height:100%;border-radius:4px;background:var(--rc,var(--accent));transition:width 1s ease}
+.score-circle{width:80px;height:80px;border-radius:50%;border:4px solid var(--sc-color,var(--accent));display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
+.score-num{font-family:var(--font-head);font-size:1.4rem;font-weight:800;color:var(--sc-color,var(--text))}
+.score-lbl{font-size:.6rem;color:var(--muted);font-family:var(--font-mono)}
+.proba-row{display:flex;gap:10px;margin-bottom:16px}
+.proba-pill{flex:1;background:var(--bg3);border-radius:9px;padding:10px;text-align:center}
+.proba-pill-val{font-family:var(--font-head);font-size:1.1rem;font-weight:700}
+.proba-pill-lbl{font-size:.65rem;color:var(--muted);font-family:var(--font-mono);margin-top:2px}
+.tips-section h4{font-size:.8rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.tip-item{display:flex;align-items:flex-start;gap:8px;font-size:.83rem;padding:7px 0;border-bottom:1px solid var(--border)}
+.tip-item:last-child{border-bottom:none}
+.tip-item::before{content:'💡';flex-shrink:0}
+
+/* ── HISTORY TABLE ── */
+.tbl-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:.8rem}
+thead th{background:var(--bg3);padding:10px 13px;text-align:left;font-family:var(--font-mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);white-space:nowrap}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(99,120,255,.04)}
+td{padding:10px 13px;white-space:nowrap}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:.68rem;font-family:var(--font-mono)}
+.b-none{background:rgba(34,211,160,.12);color:var(--green);border:1px solid rgba(34,211,160,.25)}
+.b-insomnia{background:rgba(251,191,36,.12);color:var(--yellow);border:1px solid rgba(251,191,36,.25)}
+.b-apnea{background:rgba(244,63,94,.12);color:var(--red);border:1px solid rgba(244,63,94,.25)}
+.empty-state{text-align:center;padding:40px;color:var(--muted)}
+.empty-state .ei{font-size:2.2rem;margin-bottom:10px;opacity:.4}
+
+/* ── WELLNESS TIPS ── */
+.tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tip-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;transition:border-color .2s,transform .2s}
+.tip-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.tip-card .tip-icon{font-size:1.8rem;margin-bottom:10px}
+.tip-card h4{font-family:var(--font-head);font-size:.95rem;font-weight:700;margin-bottom:6px}
+.tip-card p{font-size:.82rem;color:var(--muted);line-height:1.55}
+
+/* ── PROFILE ── */
+.profile-header{display:flex;align-items:center;gap:20px;margin-bottom:24px}
+.profile-avatar{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-size:1.8rem;font-weight:800;color:#fff;font-family:var(--font-head)}
+.profile-name{font-family:var(--font-head);font-size:1.5rem;font-weight:800}
+.profile-email{color:var(--muted);font-size:.85rem;margin-top:3px}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.profile-item{background:var(--bg3);border-radius:10px;padding:14px 16px}
+.profile-item-label{font-size:.65rem;font-family:var(--font-mono);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
+.profile-item-val{font-size:.95rem;font-weight:600}
+
+/* ── TOAST ── */
+.toast-area{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:11px 16px;font-size:.83rem;display:flex;align-items:center;gap:9px;animation:toastIn .3s ease;box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:300px}
+.toast.ok{border-left:3px solid var(--green)}
+.toast.err{border-left:3px solid var(--red)}
+@keyframes toastIn{from{transform:translateX(20px);opacity:0}to{transform:none;opacity:1}}
+
+/* ── REPORT BTNS ── */
+.report-btns{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:9px;font-size:.85rem;font-weight:600;transition:all .2s;border:none;outline:none;cursor:pointer}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:#4d64ff}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent)}
+.btn-green{background:rgba(34,211,160,.15);color:var(--green);border:1px solid rgba(34,211,160,.3)}
+.btn-green:hover{background:rgba(34,211,160,.25)}
+
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .main-content{margin-left:0;padding:16px}
+  .predict-grid,.predict-grid.three{grid-template-columns:1fr}
+  .tips-grid{grid-template-columns:1fr}
+  .profile-grid{grid-template-columns:1fr}
+  .proba-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="appLoading">
+  <div class="logo-anim">🌙 SleepSense AI</div>
+  <div class="spin"></div>
+</div>
+
+<!-- TOAST AREA -->
+<div class="toast-area" id="toastArea"></div>
+
+<!-- ════════════════════════════════════
+     AUTH PAGE
+════════════════════════════════════ -->
+<div id="authPage" class="page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <h1>🌙 SleepSense AI</h1>
+      <p>Sleep Disorder Prediction System</p>
+    </div>
+
+    <div class="auth-tabs">
+      <div class="auth-tab active" onclick="switchAuthTab('login',this)">Sign In</div>
+      <div class="auth-tab" onclick="switchAuthTab('register',this)">Register</div>
+    </div>
+
+    <!-- LOGIN FORM -->
+    <div id="loginForm">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="loginEmail" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <div class="auth-err" id="loginErr"></div>
+      <button class="btn-auth" onclick="doLogin()">Sign In</button>
+      <div class="demo-btns">
+        <p>Continue with demo account</p>
+        <div class="demo-row">
+          <button class="demo-btn" onclick="demoLogin('admin@sleepsense.ai','Admin@123')">👑 Admin</button>
+          <button class="demo-btn" onclick="demoLogin('patient@demo.com','demo123')">🛏 Patient</button>
+          <button class="demo-btn" onclick="demoLogin('doctor@demo.com','demo123')">🩺 Doctor</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- REGISTER FORM -->
+    <div id="registerForm" style="display:none">
+      <div class="form-group">
+        <label>Username</label>
+        <input type="text" id="regUsername" placeholder="johndoe"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="regEmail" placeholder="your@email.com"/>
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="regPass" placeholder="min 6 characters"/>
+      </div>
+      <div class="form-group">
+        <label>Role</label>
+        <div class="role-pills">
+          <div class="role-pill selected" data-role="patient" onclick="selectRole(this)">🛏 Patient</div>
+          <div class="role-pill" data-role="doctor" onclick="selectRole(this)">🩺 Doctor</div>
+        </div>
+      </div>
+      <div class="auth-err" id="regErr"></div>
+      <button class="btn-auth" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     MAIN APP
+════════════════════════════════════ -->
+<div id="appPage">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <h2>🌙 SleepSense</h2>
+      <span id="sbRole">Patient</span>
+    </div>
+
+    <div class="nav-sect">Patient</div>
+    <div class="nav-item active" onclick="switchView('dashboard',this)"><span class="ni">📊</span> Dashboard</div>
+    <div class="nav-item" onclick="switchView('predict',this)"><span class="ni">🧠</span> Predict</div>
+    <div class="nav-item" onclick="switchView('history',this)"><span class="ni">📋</span> My History</div>
+    <div class="nav-item" onclick="switchView('reports',this)"><span class="ni">📄</span> My Reports</div>
+    <div class="nav-item" onclick="switchView('tips',this)"><span class="ni">💡</span> Wellness Tips</div>
+    <div class="nav-item" onclick="switchView('profile',this)"><span class="ni">👤</span> Profile</div>
+
+    <div class="nav-sect admin-nav-sect" style="display:none">Admin</div>
+    <div class="nav-item admin-nav-item" style="display:none" onclick="window.location.href='/admin-panel'"><span class="ni">⚙️</span> Admin Panel</div>
+
+    <div class="sidebar-footer">
+      <div class="user-info">
+        <div class="user-avatar" id="userAvatar">U</div>
+        <div>
+          <div class="user-name" id="sidebarName">User</div>
+          <div class="user-role" id="sidebarRole">patient</div>
+        </div>
+      </div>
+      <div class="logout-btn" onclick="doLogout()">← Logout</div>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="topbar">
+      <h2 id="pageTitle">Dashboard</h2>
+      <div class="topbar-right">
+        <span id="topbarClock" style="font-family:var(--font-mono);font-size:.78rem;color:var(--muted)"></span>
+        <a href="/admin-panel" class="admin-link-btn" id="adminPanelLink" style="display:none">⚙ Admin Panel</a>
+      </div>
+    </div>
+
+    <!-- ── DASHBOARD ── -->
+    <div class="view active" id="view-dashboard">
+      <div class="kpi-row" id="dashKpis">
+        <div class="kpi" style="--kc:var(--accent)"><div class="kpi-label">Total Predictions</div><div class="kpi-val" id="kpi-preds">—</div><div class="kpi-sub">all time</div></div>
+        <div class="kpi" style="--kc:var(--green)"><div class="kpi-label">Sleep Score</div><div class="kpi-val" id="kpi-score">—</div><div class="kpi-sub">latest</div></div>
+        <div class="kpi" style="--kc:var(--yellow)"><div class="kpi-label">Last Disorder</div><div class="kpi-val" id="kpi-disorder" style="font-size:1.1rem;padding-top:6px">—</div><div class="kpi-sub">latest result</div></div>
+        <div class="kpi" style="--kc:var(--accent2)"><div class="kpi-label">Avg Duration</div><div class="kpi-val" id="kpi-dur">—</div><div class="kpi-sub">hours/night</div></div>
+      </div>
+
+      <div class="eeg-wrap">
+        <div class="eeg-label">⚡ EEG Brain Wave Monitor — Live</div>
+        <canvas id="eegCanvas"></canvas>
+      </div>
+
+      <div class="stages-row">
+        <div class="stage-card" style="--sc:var(--accent)"><div class="stage-pct">22%</div><div class="stage-name">REM</div></div>
+        <div class="stage-card" style="--sc:var(--green)"><div class="stage-pct">55%</div><div class="stage-name">Deep</div></div>
+        <div class="stage-card" style="--sc:var(--yellow)"><div class="stage-pct">15%</div><div class="stage-name">Light</div></div>
+        <div class="stage-card" style="--sc:var(--red)"><div class="stage-pct">8%</div><div class="stage-name">Awake</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Recent Predictions</div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Date</th><th>Prediction</th><th>Confidence</th><th>Sleep Score</th><th>Duration</th></tr></thead>
+            <tbody id="dashRecentTable"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PREDICT ── -->
+    <div class="view" id="view-predict">
+      <div class="card">
+        <div class="card-title">🧠 Sleep Disorder Analysis</div>
+        <div class="predict-grid">
+          <div class="fg"><label>Age</label><input type="number" id="p-age" value="30" min="10" max="90"/></div>
+          <div class="fg">
+            <label>Gender</label>
+            <select id="p-gender"><option>Male</option><option>Female</option></select>
+          </div>
+          <div class="fg">
+            <label>Occupation</label>
+            <select id="p-occupation">
+              <option>Engineer</option><option>Doctor</option><option>Teacher</option>
+              <option>Nurse</option><option>Accountant</option><option>Lawyer</option>
+              <option>Sales Representative</option><option>Software Engineer</option>
+              <option>Scientist</option><option>Manager</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>BMI Category</label>
+            <select id="p-bmi"><option>Normal</option><option>Underweight</option><option>Overweight</option><option>Obese</option></select>
+          </div>
+        </div>
+
+        <div class="predict-grid">
+          <div class="fg">
+            <label>Sleep Duration (hrs)</label>
+            <div class="range-wrap">
+              <input type="range" id="p-sleep" min="3" max="12" step=".5" value="7" oninput="g('v-sleep').textContent=this.value"/>
+              <span class="range-val" id="v-sleep">7</span>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Stress Level (1-10)</label>
+            <div class="range-wrap">
+              <input type="range" id="p-stress" min="1" max="10" value="5" oninput="g('v-stress').textContent=this.value"/>
+              <span class="range-val" id="v-stress">5</span>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Physical Activity (min/day)</label>
+            <div class="range-wrap">
+              <input type="range" id="p-activity" min="0" max="120" value="45" oninput="g('v-activity').textContent=this.value"/>
+              <span class="range-val" id="v-activity">45</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="predict-grid three">
+          <div class="fg"><label>Heart Rate (bpm)</label><input type="number" id="p-hr" value="70" min="40" max="140"/></div>
+          <div class="fg"><label>Daily Steps</label><input type="number" id="p-steps" value="7000" min="0" max="30000"/></div>
+          <div class="fg"><label>Systolic BP</label><input type="number" id="p-sbp" value="120" min="80" max="200"/></div>
+        </div>
+        <div class="predict-grid">
+          <div class="fg"><label>Diastolic BP</label><input type="number" id="p-dbp" value="80" min="40" max="130"/></div>
+        </div>
+
+        <button class="btn-predict" id="predictBtn" onclick="runPredict()">⚡ Analyse My Sleep</button>
+      </div>
+
+      <!-- RESULT -->
+      <div id="resultCard" style="display:none"></div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div class="view" id="view-history">
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          <input type="text" id="histSearch" placeholder="🔍 Filter by disorder…" style="background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:9px 14px;font-size:.85rem;outline:none;flex:1;min-width:180px" oninput="filterHistory()"/>
+          <select id="histFilter" style="background:var(--bg3);border:1px solid var(--border);border-radius:9px;color:var(--text);padding:9px 12px;font-size:.85rem;outline:none" onchange="filterHistory()">
+            <option value="">All</option>
+            <option value="None">Normal Sleep</option>
+            <option value="Insomnia">Insomnia</option>
+            <option value="Sleep Apnea">Sleep Apnea</option>
+          </select>
+        </div>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Date</th><th>Prediction</th><th>Confidence</th><th>Sleep Score</th><th>Duration</th><th>Stress</th><th>BMI</th><th>Heart Rate</th></tr></thead>
+          <tbody id="historyTable"></tbody>
+        </table>
+        <div class="empty-state" id="histEmpty" style="display:none"><div class="ei">📋</div><p>No predictions yet. Run your first analysis!</p></div>
+      </div>
+    </div>
+
+    <!-- ── REPORTS ── -->
+    <div class="view" id="view-reports">
+      <div class="report-btns">
+        <button class="btn btn-green" onclick="downloadReport()">⬇ Download Full CSV Report</button>
+      </div>
+      <div class="card">
+        <div class="card-title">📊 Health Summary</div>
+        <div id="reportSummary" style="color:var(--muted);font-size:.85rem">Loading your health summary...</div>
+      </div>
+    </div>
+
+    <!-- ── TIPS ── -->
+    <div class="view" id="view-tips">
+      <div class="tips-grid">
+        <div class="tip-card"><div class="tip-icon">🕐</div><h4>Consistent Schedule</h4><p>Go to bed and wake up at the same time every day — even on weekends. This reinforces your circadian rhythm.</p></div>
+        <div class="tip-card"><div class="tip-icon">📵</div><h4>Limit Screens Before Bed</h4><p>Avoid phones and laptops at least 60 minutes before sleep. Blue light suppresses melatonin production.</p></div>
+        <div class="tip-card"><div class="tip-icon">🌡</div><h4>Cool & Dark Environment</h4><p>Keep bedroom between 18–20°C. Darkness signals the brain it's time to sleep. Use blackout curtains if needed.</p></div>
+        <div class="tip-card"><div class="tip-icon">☕</div><h4>Caffeine Curfew</h4><p>Stop consuming caffeine after 2 PM. Coffee's half-life is 5–6 hours — it can still be in your system at midnight.</p></div>
+        <div class="tip-card"><div class="tip-icon">🧘</div><h4>Relaxation Techniques</h4><p>Practice 4-7-8 breathing, progressive muscle relaxation, or guided meditation to wind down before bed.</p></div>
+        <div class="tip-card"><div class="tip-icon">🏃</div><h4>Daily Exercise</h4><p>Regular physical activity improves sleep quality. Aim for 30+ min/day but avoid intense workouts within 3 hrs of bedtime.</p></div>
+        <div class="tip-card"><div class="tip-icon">🥗</div><h4>Watch Your Diet</h4><p>Avoid heavy meals 2–3 hours before bed. Magnesium-rich foods (nuts, leafy greens) promote deep sleep.</p></div>
+        <div class="tip-card"><div class="tip-icon">📓</div><h4>Sleep Diary</h4><p>Track your sleep patterns daily — duration, quality, mood. Identifying trends helps you make better lifestyle changes.</p></div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE ── -->
+    <div class="view" id="view-profile">
+      <div class="profile-header">
+        <div class="profile-avatar" id="profAvatar">U</div>
+        <div>
+          <div class="profile-name" id="profName">—</div>
+          <div class="profile-email" id="profEmail">—</div>
+        </div>
+      </div>
+      <div class="profile-grid" id="profileGrid"></div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ──────────────────────────────────────────
+// GLOBALS
+// ──────────────────────────────────────────
+const API = '';
+let currentUser = null;
+let historyData = [];
+
+function g(id){ return document.getElementById(id); }
+
+// ──────────────────────────────────────────
+// TOAST
+// ──────────────────────────────────────────
+function toast(msg, type='ok'){
+  const area = g('toastArea');
+  const el   = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type==='ok'?'✅':'❌'}</span>${msg}`;
+  area.appendChild(el);
+  setTimeout(()=>el.remove(), 3200);
+}
+
+// ──────────────────────────────────────────
+// CLOCK
+// ──────────────────────────────────────────
+setInterval(()=>{
+  const el = g('topbarClock');
+  if(el) el.textContent = new Date().toLocaleTimeString('en-IN');
+},1000);
+
+// ──────────────────────────────────────────
+// EEG WAVE
+// ──────────────────────────────────────────
+function startEEG(){
+  const canvas = g('eegCanvas');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  canvas.width  = canvas.offsetWidth;
+  canvas.height = 60;
+  let t = 0;
+  function draw(){
+    const W=canvas.width, H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+    ctx.beginPath();
+    ctx.strokeStyle = '#6378ff';
+    ctx.lineWidth   = 1.5;
+    for(let x=0;x<W;x++){
+      const y = H/2
+        + Math.sin((x+t)*0.05)*8
+        + Math.sin((x+t)*0.12)*4
+        + Math.sin((x+t)*0.3)*2
+        + (Math.random()-0.5)*1.5;
+      x===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+    t+=2;
+    requestAnimationFrame(draw);
+  }
+  draw();
+}
+
+// ──────────────────────────────────────────
+// AUTH
+// ──────────────────────────────────────────
+function switchAuthTab(tab, el){
+  document.querySelectorAll('.auth-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  g('loginForm').style.display    = tab==='login'    ? 'block' : 'none';
+  g('registerForm').style.display = tab==='register' ? 'block' : 'none';
+}
+
+let selectedRole = 'patient';
+function selectRole(el){
+  document.querySelectorAll('.role-pill').forEach(p=>p.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedRole = el.dataset.role;
+}
+
+async function doLogin(){
+  const email    = g('loginEmail').value.trim();
+  const password = g('loginPass').value;
+  g('loginErr').textContent='';
+  if(!email||!password){g('loginErr').textContent='Please fill all fields';return;}
+  try{
+    const res  = await fetch(`${API}/api/login`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({email,password})});
+    const data = await res.json();
+    if(!res.ok){g('loginErr').textContent=data.error||'Login failed';return;}
+    currentUser = data;
+    showApp(data);
+  }catch(e){g('loginErr').textContent='Connection error';}
+}
+
+async function demoLogin(email, pass){
+  g('loginEmail').value = email;
+  g('loginPass').value  = pass;
+  doLogin();
+}
+
+async function doRegister(){
+  const username = g('regUsername').value.trim();
+  const email    = g('regEmail').value.trim();
+  const password = g('regPass').value;
+  g('regErr').textContent='';
+  if(!username||!email||!password){g('regErr').textContent='All fields required';return;}
+  if(password.length<6){g('regErr').textContent='Password min 6 chars';return;}
+  try{
+    const res  = await fetch(`${API}/api/register`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify({username,email,password,role:selectedRole})});
+    const data = await res.json();
+    if(!res.ok){g('regErr').textContent=data.error||'Registration failed';return;}
+    currentUser = data;
+    showApp(data);
+  }catch(e){g('regErr').textContent='Connection error';}
+}
+
+async function doLogout(){
+  await fetch(`${API}/api/logout`,{method:'POST',credentials:'include'});
+  currentUser = null;
+  g('appPage').classList.remove('active');
+  g('appPage').style.display='none';
+  g('authPage').classList.add('active');
+  g('authPage').style.display='flex';
+}
+
+// ──────────────────────────────────────────
+// SHOW APP
+// ──────────────────────────────────────────
+function showApp(user){
+  g('authPage').style.display='none';
+  g('appPage').style.display='flex';
+  g('appPage').classList.add('active');
+  g('sidebarName').textContent  = user.username;
+  g('sidebarRole').textContent  = user.role;
+  g('sbRole').textContent       = user.role;
+  g('userAvatar').textContent   = user.username[0].toUpperCase();
+  g('profAvatar').textContent   = user.username[0].toUpperCase();
+  g('profName').textContent     = user.username;
+  g('profEmail').textContent    = user.email||'';
+  if(user.role==='admin'){
+    document.querySelectorAll('.admin-nav-sect,.admin-nav-item').forEach(el=>el.style.display='');
+    g('adminPanelLink').style.display='inline-flex';
+  }
+  loadDashboard();
+  startEEG();
+  // Profile grid
+  g('profileGrid').innerHTML=`
+    <div class="profile-item"><div class="profile-item-label">Username</div><div class="profile-item-val">${user.username}</div></div>
+    <div class="profile-item"><div class="profile-item-label">Role</div><div class="profile-item-val">${user.role}</div></div>
+    <div class="profile-item"><div class="profile-item-label">Email</div><div class="profile-item-val">${user.email||'—'}</div></div>
+    <div class="profile-item"><div class="profile-item-label">Status</div><div class="profile-item-val" style="color:var(--green)">Active</div></div>
+  `;
+}
+
+// ──────────────────────────────────────────
+// VIEWS
+// ──────────────────────────────────────────
+const VIEW_TITLES = {dashboard:'Dashboard',predict:'Sleep Prediction',history:'My History',reports:'My Reports',tips:'Wellness Tips',profile:'My Profile'};
+function switchView(name, el){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  g(`view-${name}`).classList.add('active');
+  if(el) el.classList.add('active');
+  g('pageTitle').textContent = VIEW_TITLES[name]||name;
+  if(name==='history') loadHistory();
+  if(name==='reports') loadReportSummary();
+}
+
+// ──────────────────────────────────────────
+// DASHBOARD
+// ──────────────────────────────────────────
+async function loadDashboard(){
+  try{
+    const records = await fetch(`${API}/api/history`,{credentials:'include'}).then(r=>r.json());
+    if(!Array.isArray(records)||!records.length){ historyData=[]; return; }
+    historyData = records;
+    g('kpi-preds').textContent  = records.length;
+    g('kpi-score').textContent  = records[0].sleep_score??'—';
+    const last = records[0].prediction||'—';
+    g('kpi-disorder').textContent = last==='None'?'Normal':last;
+    const avgDur = (records.reduce((s,r)=>s+(r.sleep_duration||0),0)/records.length).toFixed(1);
+    g('kpi-dur').textContent = avgDur+'h';
+    const tbody = g('dashRecentTable');
+    tbody.innerHTML = records.slice(0,5).map(r=>`
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${r.created_at}</td>
+        <td>${disorderBadge(r.prediction)}</td>
+        <td style="font-family:var(--font-mono)">${r.confidence}%</td>
+        <td style="color:${scoreColor(r.sleep_score)};font-family:var(--font-mono);font-weight:600">${r.sleep_score}</td>
+        <td style="font-family:var(--font-mono)">${r.sleep_duration}h</td>
+      </tr>
+    `).join('');
+  }catch(e){}
+}
+
+// ──────────────────────────────────────────
+// PREDICT
+// ──────────────────────────────────────────
+async function runPredict(){
+  const btn = g('predictBtn');
+  btn.disabled=true; btn.textContent='⏳ Analysing…';
+  const body={
+    age:g('p-age').value, gender:g('p-gender').value,
+    occupation:g('p-occupation').value, sleep_duration:g('p-sleep').value,
+    stress_level:g('p-stress').value, bmi_category:g('p-bmi').value,
+    heart_rate:g('p-hr').value, daily_steps:g('p-steps').value,
+    physical_activity:g('p-activity').value,
+    systolic_bp:g('p-sbp').value, diastolic_bp:g('p-dbp').value
+  };
+  try{
+    const res  = await fetch(`${API}/api/predict`,{method:'POST',headers:{'Content-Type':'application/json'},credentials:'include',body:JSON.stringify(body)});
+    const data = await res.json();
+    if(!res.ok){toast(data.error||'Prediction failed','err');return;}
+    renderResult(data);
+    toast('Analysis complete!');
+  }catch(e){toast('Connection error','err');}
+  btn.disabled=false; btn.textContent='⚡ Analyse My Sleep';
+}
+
+const DISORDER_COLORS={None:'var(--green)',Insomnia:'var(--yellow)','Sleep Apnea':'var(--red)'};
+function renderResult(data){
+  const rc     = DISORDER_COLORS[data.prediction]||'var(--accent)';
+  const sc     = scoreColor(data.sleep_score);
+  const probs  = data.all_probabilities||{};
+  const tipsHtml = (data.tips||[]).map(t=>`<div class="tip-item">${t}</div>`).join('');
+  const probHtml = Object.entries(probs).map(([k,v])=>`
+    <div class="proba-pill">
+      <div class="proba-pill-val" style="color:${DISORDER_COLORS[k]||'var(--accent)'}">${v}%</div>
+      <div class="proba-pill-lbl">${k==='None'?'Normal':k}</div>
+    </div>`).join('');
+  g('resultCard').style.display='block';
+  g('resultCard').innerHTML=`
+    <div class="result-card" style="--rc:${rc}">
+      <div class="result-header">
+        <div>
+          <div style="font-size:.7rem;font-family:var(--font-mono);color:var(--muted);margin-bottom:4px">DIAGNOSIS</div>
+          <div class="result-label">${data.prediction==='None'?'✅ Normal Sleep':(data.prediction==='Insomnia'?'⚠ Insomnia':'🚨 Sleep Apnea')}</div>
+        </div>
+        <div class="score-circle" style="--sc-color:${sc}">
+          <div class="score-num">${data.sleep_score}</div>
+          <div class="score-lbl">SCORE</div>
+        </div>
+      </div>
+      <div class="conf-bar-wrap">
+        <div style="display:flex;justify-content:space-between;font-size:.72rem;color:var(--muted)">
+          <span style="font-family:var(--font-mono)">CONFIDENCE</span>
+          <span style="font-family:var(--font-mono);color:${rc}">${data.confidence}%</span>
+        </div>
+        <div class="conf-bar-track"><div class="conf-bar-fill" style="width:${data.confidence}%;background:${rc}"></div></div>
+      </div>
+      <div class="proba-row">${probHtml}</div>
+      <div class="tips-section">
+        <h4>Personalised Recommendations</h4>
+        ${tipsHtml}
+      </div>
+    </div>`;
+}
+
+// ──────────────────────────────────────────
+// HISTORY
+// ──────────────────────────────────────────
+async function loadHistory(){
+  try{
+    const records = await fetch(`${API}/api/history`,{credentials:'include'}).then(r=>r.json());
+    historyData   = Array.isArray(records)?records:[];
+    renderHistory(historyData);
+  }catch(e){ renderHistory([]); }
+}
+
+function renderHistory(data){
+  const tbody = g('historyTable');
+  const empty = g('histEmpty');
+  if(!data.length){ tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  tbody.innerHTML = data.map(r=>`
+    <tr>
+      <td style="font-family:var(--font-mono);font-size:.74rem">${r.created_at}</td>
+      <td>${disorderBadge(r.prediction)}</td>
+      <td style="font-family:var(--font-mono)">${r.confidence}%</td>
+      <td style="color:${scoreColor(r.sleep_score)};font-family:var(--font-mono);font-weight:600">${r.sleep_score}</td>
+      <td style="font-family:var(--font-mono)">${r.sleep_duration}h</td>
+      <td style="font-family:var(--font-mono)">${r.stress_level}/10</td>
+      <td style="font-size:.78rem">${r.bmi_category||'—'}</td>
+      <td style="font-family:var(--font-mono)">${r.heart_rate||'—'}</td>
+    </tr>
+  `).join('');
+}
+
+function filterHistory(){
+  const search = g('histSearch').value.toLowerCase();
+  const filter = g('histFilter').value;
+  const filtered = historyData.filter(r=>{
+    const matchFilter = !filter || r.prediction===filter;
+    const matchSearch = !search || (r.prediction||'').toLowerCase().includes(search);
+    return matchFilter && matchSearch;
+  });
+  renderHistory(filtered);
+}
+
+// ──────────────────────────────────────────
+// REPORTS
+// ──────────────────────────────────────────
+function downloadReport(){
+  window.open(`${API}/api/report/download`,'_blank');
+  toast('Report download started!');
+}
+
+async function loadReportSummary(){
+  try{
+    const records = await fetch(`${API}/api/history`,{credentials:'include'}).then(r=>r.json());
+    if(!Array.isArray(records)||!records.length){
+      g('reportSummary').innerHTML='<p>No predictions yet to summarise.</p>';return;
+    }
+    const total    = records.length;
+    const avgScore = (records.reduce((s,r)=>s+(r.sleep_score||0),0)/total).toFixed(1);
+    const avgDur   = (records.reduce((s,r)=>s+(r.sleep_duration||0),0)/total).toFixed(1);
+    const dist     = records.reduce((acc,r)=>{acc[r.prediction]=(acc[r.prediction]||0)+1;return acc;},{});
+    g('reportSummary').innerHTML=`
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:16px">
+        <div style="background:var(--bg3);border-radius:10px;padding:14px"><div style="font-size:.65rem;font-family:var(--font-mono);color:var(--muted);margin-bottom:4px">TOTAL PREDICTIONS</div><div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--accent)">${total}</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:14px"><div style="font-size:.65rem;font-family:var(--font-mono);color:var(--muted);margin-bottom:4px">AVG SLEEP SCORE</div><div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:${scoreColor(avgScore)}">${avgScore}</div></div>
+        <div style="background:var(--bg3);border-radius:10px;padding:14px"><div style="font-size:.65rem;font-family:var(--font-mono);color:var(--muted);margin-bottom:4px">AVG SLEEP DURATION</div><div style="font-family:var(--font-head);font-size:1.5rem;font-weight:800;color:var(--accent2)">${avgDur}h</div></div>
+      </div>
+      <div style="font-size:.78rem;color:var(--muted)">
+        ${Object.entries(dist).map(([k,v])=>`<span style="margin-right:14px">${disorderBadge(k)} ${v} time${v>1?'s':''}</span>`).join('')}
+      </div>`;
+  }catch(e){}
+}
+
+// ──────────────────────────────────────────
+// HELPERS
+// ──────────────────────────────────────────
+function disorderBadge(d){
+  if(!d||d==='None') return `<span class="badge b-none">Normal</span>`;
+  if(d==='Insomnia')  return `<span class="badge b-insomnia">Insomnia</span>`;
+  return `<span class="badge b-apnea">Sleep Apnea</span>`;
+}
+function scoreColor(s){
+  s=parseFloat(s);
+  if(s>=70) return 'var(--green)';
+  if(s>=45) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+// ──────────────────────────────────────────
+// INIT
+// ──────────────────────────────────────────
+async function init(){
+  try{
+    const res  = await fetch(`${API}/api/me`,{credentials:'include'});
+    const data = await res.json();
+    if(res.ok && data.username){
+      currentUser = data;
+      showApp(data);
+      g('authPage').style.display='none';
+    } else {
+      g('authPage').style.display='flex';
+      g('authPage').classList.add('active');
+    }
+  }catch(e){
+    g('authPage').style.display='flex';
+    g('authPage').classList.add('active');
+  }
+  setTimeout(()=>{ g('appLoading').classList.add('hide'); setTimeout(()=>g('appLoading').style.display='none',600); },600);
+}
+
+init();
+</script>
+</body>
+</html>

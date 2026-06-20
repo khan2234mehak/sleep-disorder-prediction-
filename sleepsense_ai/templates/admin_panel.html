@@ -1,0 +1,1350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SleepSense — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── RESET & VARIABLES ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #07080f;
+    --bg2:       #0d0f1c;
+    --bg3:       #131627;
+    --border:    rgba(99,120,255,0.15);
+    --accent:    #6378ff;
+    --accent2:   #a78bfa;
+    --green:     #22d3a0;
+    --red:       #f43f5e;
+    --yellow:    #fbbf24;
+    --orange:    #fb923c;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --card:      rgba(13,15,28,0.9);
+    --radius:    14px;
+    --font-head: 'Syne', sans-serif;
+    --font-mono: 'DM Mono', monospace;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    padding: 28px 0 20px;
+    position: fixed;
+    height: 100vh;
+    top: 0; left: 0;
+    z-index: 100;
+    transition: transform .3s ease;
+  }
+  .sidebar-logo {
+    padding: 0 24px 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo h1 {
+    font-family: var(--font-head);
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -0.5px;
+  }
+  .sidebar-logo span {
+    font-size: .72rem;
+    color: var(--muted);
+    font-family: var(--font-mono);
+    display: block;
+    margin-top: 3px;
+  }
+  .nav-section {
+    padding: 6px 12px;
+    font-size: .65rem;
+    font-family: var(--font-mono);
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 8px 0 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 24px;
+    cursor: pointer;
+    border-radius: 0;
+    font-size: .875rem;
+    color: var(--muted);
+    transition: all .2s;
+    border-left: 3px solid transparent;
+    font-weight: 500;
+  }
+  .nav-item:hover { color: var(--text); background: rgba(99,120,255,.06); }
+  .nav-item.active {
+    color: var(--accent);
+    background: rgba(99,120,255,.1);
+    border-left-color: var(--accent);
+  }
+  .nav-item .icon { font-size: 1rem; width: 20px; text-align: center; }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 24px;
+    border-top: 1px solid var(--border);
+  }
+  .back-btn {
+    display: flex; align-items: center; gap: 8px;
+    color: var(--muted); font-size: .8rem; cursor: pointer;
+    transition: color .2s;
+  }
+  .back-btn:hover { color: var(--red); }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    margin-left: 240px;
+    flex: 1;
+    padding: 32px 36px;
+    min-height: 100vh;
+    background: var(--bg);
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 32px;
+  }
+  .topbar-title {
+    font-family: var(--font-head);
+    font-size: 1.6rem;
+    font-weight: 800;
+    letter-spacing: -.5px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .badge-admin {
+    background: rgba(99,120,255,.15);
+    border: 1px solid rgba(99,120,255,.3);
+    color: var(--accent);
+    font-size: .72rem;
+    font-family: var(--font-mono);
+    padding: 4px 10px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+  }
+  .clock {
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: var(--muted);
+  }
+
+  /* ── TABS / VIEWS ── */
+  .view { display: none; animation: fadeIn .3s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+  /* ── KPI CARDS ── */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+  .kpi-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s, border-color .2s;
+  }
+  .kpi-card:hover { transform: translateY(-2px); border-color: rgba(99,120,255,.35); }
+  .kpi-card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--accent-line, var(--accent));
+  }
+  .kpi-label { font-size: .72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-family: var(--font-mono); }
+  .kpi-value { font-size: 2rem; font-family: var(--font-head); font-weight: 800; margin: 6px 0 2px; }
+  .kpi-sub { font-size: .75rem; color: var(--muted); }
+  .kpi-icon { position: absolute; right: 18px; top: 18px; font-size: 1.6rem; opacity: .15; }
+
+  /* ── FILTER BAR ── */
+  .filter-bar {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .filter-group { display: flex; flex-direction: column; gap: 5px; }
+  .filter-group label { font-size: .68rem; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .filter-group input,
+  .filter-group select {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: .85rem;
+    padding: 7px 12px;
+    outline: none;
+    transition: border-color .2s;
+    min-width: 140px;
+  }
+  .filter-group input:focus,
+  .filter-group select:focus { border-color: var(--accent); }
+  .filter-group select option { background: var(--bg2); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 16px; border-radius: 8px; cursor: pointer;
+    font-family: var(--font-body); font-size: .85rem; font-weight: 600;
+    transition: all .2s; border: none; outline: none;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #4d64ff; transform: translateY(-1px); }
+  .btn-secondary { background: var(--bg3); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-success { background: rgba(34,211,160,.15); color: var(--green); border: 1px solid rgba(34,211,160,.3); }
+  .btn-success:hover { background: rgba(34,211,160,.25); }
+  .btn-danger { background: rgba(244,63,94,.1); color: var(--red); border: 1px solid rgba(244,63,94,.3); }
+  .btn-danger:hover { background: rgba(244,63,94,.2); }
+  .btn-sm { padding: 5px 11px; font-size: .78rem; }
+
+  /* ── TABLE ── */
+  .table-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .table-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-header h3 { font-family: var(--font-head); font-size: 1rem; font-weight: 700; }
+  .table-header-right { display: flex; gap: 8px; align-items: center; }
+  .result-count {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    background: var(--bg3);
+    padding: 3px 10px;
+    border-radius: 12px;
+  }
+  .table-scroll { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+  thead th {
+    background: var(--bg3);
+    padding: 11px 14px;
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(99,120,255,.04); }
+  td { padding: 11px 14px; white-space: nowrap; vertical-align: middle; }
+  td.wrap { white-space: normal; max-width: 200px; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    padding: 3px 9px; border-radius: 20px;
+    font-size: .7rem; font-family: var(--font-mono); font-weight: 500;
+  }
+  .badge-success  { background: rgba(34,211,160,.12); color: var(--green); border: 1px solid rgba(34,211,160,.25); }
+  .badge-danger   { background: rgba(244,63,94,.12);  color: var(--red);   border: 1px solid rgba(244,63,94,.25); }
+  .badge-warning  { background: rgba(251,191,36,.12); color: var(--yellow);border: 1px solid rgba(251,191,36,.25); }
+  .badge-info     { background: rgba(99,120,255,.12); color: var(--accent);border: 1px solid rgba(99,120,255,.25); }
+  .badge-orange   { background: rgba(251,146,60,.12); color: var(--orange);border: 1px solid rgba(251,146,60,.25); }
+  .badge-none     { background: rgba(34,211,160,.12); color: var(--green); border: 1px solid rgba(34,211,160,.25); }
+  .badge-insomnia { background: rgba(251,191,36,.12); color: var(--yellow);border: 1px solid rgba(251,191,36,.25); }
+  .badge-apnea    { background: rgba(244,63,94,.12);  color: var(--red);   border: 1px solid rgba(244,63,94,.25); }
+
+  /* ── DISORDER SUMMARY CARDS ── */
+  .disorder-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+    margin-bottom: 24px;
+  }
+  .d-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    cursor: pointer;
+    transition: all .2s;
+    position: relative; overflow: hidden;
+  }
+  .d-card:hover { border-color: var(--dc, var(--accent)); transform: translateY(-2px); }
+  .d-card.selected { border-color: var(--dc, var(--accent)); background: rgba(99,120,255,.07); }
+  .d-card::before { content: ''; position: absolute; top:0;left:0;right:0;height:3px; background: var(--dc,var(--accent)); }
+  .d-card-label { font-size: .7rem; font-family: var(--font-mono); color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+  .d-card-num { font-family: var(--font-head); font-size: 2.4rem; font-weight: 800; color: var(--dc, var(--text)); }
+  .d-card-sub { font-size: .75rem; color: var(--muted); margin-top: 3px; }
+  .d-card[data-type="All"]         { --dc: var(--accent); }
+  .d-card[data-type="None"]        { --dc: var(--green);  }
+  .d-card[data-type="Insomnia"]    { --dc: var(--yellow); }
+  .d-card[data-type="Sleep Apnea"] { --dc: var(--red);    }
+
+  /* ── EXPANDABLE ROW ── */
+  .expand-btn {
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 1rem; transition: transform .2s;
+    padding: 2px 6px;
+  }
+  .expand-btn.open { transform: rotate(90deg); color: var(--accent); }
+  .expand-row { display: none; }
+  .expand-row.open { display: table-row; }
+  .expand-content {
+    background: var(--bg3);
+    padding: 16px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .login-timeline {
+    display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto;
+  }
+  .login-timeline::-webkit-scrollbar { width: 4px; }
+  .login-timeline::-webkit-scrollbar-track { background: transparent; }
+  .login-timeline::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .timeline-entry {
+    display: flex; align-items: center; gap: 12px;
+    font-family: var(--font-mono); font-size: .75rem;
+    padding: 6px 10px;
+    background: var(--bg2);
+    border-radius: 8px;
+    border-left: 3px solid var(--entry-color, var(--border));
+  }
+  .timeline-entry.success { --entry-color: var(--green); }
+  .timeline-entry.failed  { --entry-color: var(--red); }
+  .timeline-date  { color: var(--text); font-weight: 500; min-width: 90px; }
+  .timeline-time  { color: var(--accent); min-width: 72px; }
+  .timeline-ip    { color: var(--muted); flex: 1; }
+  .timeline-status { min-width: 60px; }
+
+  /* ── LOADING OVERLAY ── */
+  .loading-overlay {
+    position: fixed; inset: 0;
+    background: rgba(7,8,15,.85);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    opacity: 0; pointer-events: none;
+    transition: opacity .3s;
+  }
+  .loading-overlay.show { opacity: 1; pointer-events: all; }
+  .spinner {
+    width: 44px; height: 44px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── TOAST ── */
+  .toast-area { position: fixed; bottom: 24px; right: 24px; z-index: 9998; display: flex; flex-direction: column; gap: 8px; }
+  .toast {
+    background: var(--bg3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 18px;
+    font-size: .85rem; display: flex; align-items: center; gap: 10px;
+    animation: slideIn .3s ease; max-width: 320px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.4);
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.error   { border-left: 3px solid var(--red); }
+  @keyframes slideIn { from { transform: translateX(30px); opacity:0; } to { transform:none; opacity:1; } }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center; padding: 48px 20px; color: var(--muted);
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: .4; }
+  .empty-state p { font-size: .9rem; }
+
+  /* ── CHART AREA ── */
+  .chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+  .chart-box {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+  .chart-box h4 { font-family: var(--font-head); font-size: .95rem; font-weight: 700; margin-bottom: 16px; }
+  .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+  .bar-item { display: flex; align-items: center; gap: 10px; }
+  .bar-item-label { font-size: .78rem; color: var(--muted); min-width: 110px; text-align: right; font-family: var(--font-mono); }
+  .bar-track { flex: 1; height: 20px; background: var(--bg3); border-radius: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 10px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+  .bar-item-val { font-size: .78rem; font-family: var(--font-mono); color: var(--text); min-width: 36px; }
+  .donut-wrap { display: flex; align-items: center; gap: 24px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: .82rem; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .sidebar { transform: translateX(-100%); }
+    .main { margin-left: 0; padding: 20px 16px; }
+    .chart-row { grid-template-columns: 1fr; }
+    .disorder-grid { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 600px) {
+    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .disorder-grid { grid-template-columns: 1fr; }
+    .filter-bar { flex-direction: column; }
+    .filter-group { width: 100%; }
+    .filter-group input, .filter-group select { width: 100%; }
+  }
+
+  /* scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LOADING OVERLAY -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="spinner"></div>
+</div>
+
+<!-- TOAST AREA -->
+<div class="toast-area" id="toastArea"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <h1>🌙 SleepSense</h1>
+    <span>Admin Console v2</span>
+  </div>
+
+  <div class="nav-section">Overview</div>
+  <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard',this)">
+    <span class="icon">📊</span> Dashboard
+  </div>
+
+  <div class="nav-section">Users</div>
+  <div class="nav-item" data-view="login-history" onclick="switchView('login-history',this)">
+    <span class="icon">🔐</span> Login History
+  </div>
+  <div class="nav-item" data-view="user-management" onclick="switchView('user-management',this)">
+    <span class="icon">👥</span> User Management
+  </div>
+
+  <div class="nav-section">Predictions</div>
+  <div class="nav-item" data-view="disorder-summary" onclick="switchView('disorder-summary',this)">
+    <span class="icon">🧠</span> Disorder Summary
+  </div>
+  <div class="nav-item" data-view="all-predictions" onclick="switchView('all-predictions',this)">
+    <span class="icon">📋</span> All Predictions
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="back-btn" onclick="window.location.href='/'">
+      ← Back to App
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title" id="pageTitle">Dashboard</div>
+    <div class="topbar-right">
+      <span class="clock" id="clock">--:--:--</span>
+      <span class="badge-admin">Admin</span>
+      <button class="btn btn-secondary btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 1: DASHBOARD
+  ═══════════════════════════════════════════ -->
+  <div class="view active" id="view-dashboard">
+
+    <div class="kpi-grid" id="kpiGrid">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="chart-row">
+      <div class="chart-box">
+        <h4>Disorder Distribution</h4>
+        <div class="donut-wrap">
+          <canvas id="donutCanvas" width="140" height="140"></canvas>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <h4>Daily Logins (Last 30 Days)</h4>
+        <canvas id="loginChart" width="400" height="140"></canvas>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Recent Login Activity</h3>
+        <div class="table-header-right">
+          <span class="result-count" id="recentLoginCount">—</span>
+          <button class="btn btn-secondary btn-sm" onclick="downloadCSV('login-logs')">⬇ Export</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th><th>Role</th><th>Date</th><th>Time</th>
+              <th>IP Address</th><th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="recentLoginTable"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 2: LOGIN HISTORY
+  ═══════════════════════════════════════════ -->
+  <div class="view" id="view-login-history">
+
+    <!-- Filters -->
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Username</label>
+        <input type="text" id="lh-username" placeholder="Search username…" oninput="debounce(loadLoginHistory, 400)()"/>
+      </div>
+      <div class="filter-group">
+        <label>Status</label>
+        <select id="lh-status" onchange="loadLoginHistory()">
+          <option value="">All</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" id="lh-from" onchange="loadLoginHistory()"/>
+      </div>
+      <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" id="lh-to" onchange="loadLoginHistory()"/>
+      </div>
+      <div class="filter-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="loadLoginHistory()">🔍 Apply</button>
+          <button class="btn btn-secondary" onclick="clearFilters('lh'); loadLoginHistory()">✕ Clear</button>
+          <button class="btn btn-success" onclick="downloadCSV('login-logs', buildLoginParams())">⬇ CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Login Activity Log</h3>
+        <span class="result-count" id="lhCount">—</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Username</th><th>Email</th><th>Role</th>
+              <th>Date</th><th>Time</th><th>IP Address</th>
+              <th>Status</th><th>User Agent</th>
+            </tr>
+          </thead>
+          <tbody id="loginHistoryTable"></tbody>
+        </table>
+      </div>
+      <div id="lhEmpty" class="empty-state" style="display:none">
+        <div class="icon">🔒</div>
+        <p>No login records match your filters.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 3: USER MANAGEMENT (with per-user login expand)
+  ═══════════════════════════════════════════ -->
+  <div class="view" id="view-user-management">
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Search User</label>
+        <input type="text" id="um-search" placeholder="Name or email…" oninput="debounce(loadUsers,400)()"/>
+      </div>
+      <div class="filter-group">
+        <label>Role</label>
+        <select id="um-role" onchange="loadUsers()">
+          <option value="">All Roles</option>
+          <option value="patient">Patient</option>
+          <option value="doctor">Doctor</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div class="filter-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="loadUsers()">🔍 Search</button>
+          <button class="btn btn-success" onclick="downloadCSV('users/report')">⬇ CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>All Users</h3>
+        <span class="result-count" id="umCount">—</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th></th><th>ID</th><th>Username</th><th>Email</th>
+              <th>Role</th><th>Status</th><th>Predictions</th>
+              <th>Registered</th><th>Last Login</th><th>Last IP</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="userTable"></tbody>
+        </table>
+      </div>
+      <div id="umEmpty" class="empty-state" style="display:none">
+        <div class="icon">👥</div><p>No users found.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 4: DISORDER SUMMARY
+  ═══════════════════════════════════════════ -->
+  <div class="view" id="view-disorder-summary">
+
+    <div class="disorder-grid">
+      <div class="d-card selected" data-type="All" onclick="filterByDisorder('')" style="--dc:var(--accent)">
+        <div class="d-card-label">All Users</div>
+        <div class="d-card-num" id="ds-all">—</div>
+        <div class="d-card-sub">total predictions</div>
+      </div>
+      <div class="d-card" data-type="None" onclick="filterByDisorder('None')" style="--dc:var(--green)">
+        <div class="d-card-label">Normal Sleep</div>
+        <div class="d-card-num" id="ds-none" style="color:var(--green)">—</div>
+        <div class="d-card-sub">no disorder</div>
+      </div>
+      <div class="d-card" data-type="Insomnia" onclick="filterByDisorder('Insomnia')" style="--dc:var(--yellow)">
+        <div class="d-card-label">Insomnia</div>
+        <div class="d-card-num" id="ds-insomnia" style="color:var(--yellow)">—</div>
+        <div class="d-card-sub">insomnia cases</div>
+      </div>
+      <div class="d-card" data-type="Sleep Apnea" onclick="filterByDisorder('Sleep Apnea')" style="--dc:var(--red)">
+        <div class="d-card-label">Sleep Apnea</div>
+        <div class="d-card-num" id="ds-apnea" style="color:var(--red)">—</div>
+        <div class="d-card-sub">apnea cases</div>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Username Filter</label>
+        <input type="text" id="ds-username" placeholder="Search user…" oninput="debounce(loadDisorderSummary,400)()"/>
+      </div>
+      <div class="filter-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <button class="btn btn-primary" onclick="loadDisorderSummary()">🔍 Apply</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>Per-User Disorder Breakdown</h3>
+        <span class="result-count" id="dsCount">—</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Username</th><th>Email</th><th>Role</th><th>Total</th>
+              <th>Normal Sleep</th><th>Insomnia</th><th>Sleep Apnea</th>
+              <th>Last Prediction</th>
+            </tr>
+          </thead>
+          <tbody id="disorderTable"></tbody>
+        </table>
+      </div>
+      <div id="dsEmpty" class="empty-state" style="display:none">
+        <div class="icon">🧠</div><p>No data found.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       VIEW 5: ALL PREDICTIONS
+  ═══════════════════════════════════════════ -->
+  <div class="view" id="view-all-predictions">
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>Disorder Type</label>
+        <select id="ap-disorder" onchange="loadAllPredictions()">
+          <option value="">All</option>
+          <option value="None">Normal Sleep</option>
+          <option value="Insomnia">Insomnia</option>
+          <option value="Sleep Apnea">Sleep Apnea</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Username</label>
+        <input type="text" id="ap-username" placeholder="Filter by user…" oninput="debounce(loadAllPredictions,400)()"/>
+      </div>
+      <div class="filter-group">
+        <label>Date From</label>
+        <input type="date" id="ap-from" onchange="loadAllPredictions()"/>
+      </div>
+      <div class="filter-group">
+        <label>Date To</label>
+        <input type="date" id="ap-to" onchange="loadAllPredictions()"/>
+      </div>
+      <div class="filter-group" style="justify-content:flex-end">
+        <label>&nbsp;</label>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="loadAllPredictions()">🔍 Filter</button>
+          <button class="btn btn-secondary" onclick="clearFilters('ap'); loadAllPredictions()">✕ Clear</button>
+          <button class="btn btn-success" onclick="downloadCSV('report', buildPredParams())">⬇ CSV</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="table-header">
+        <h3>All Predictions</h3>
+        <span class="result-count" id="apCount">—</span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th><th>Username</th><th>Date</th><th>Time</th>
+              <th>Prediction</th><th>Confidence</th><th>Sleep Score</th>
+              <th>Age</th><th>Gender</th><th>Sleep Duration</th>
+              <th>Stress</th><th>BMI</th><th>Heart Rate</th>
+            </tr>
+          </thead>
+          <tbody id="predTable"></tbody>
+        </table>
+      </div>
+      <div id="apEmpty" class="empty-state" style="display:none">
+        <div class="icon">📋</div><p>No predictions found.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ──────────────────────────────────────────────
+//  GLOBAL STATE
+// ──────────────────────────────────────────────
+const API = '';   // same origin
+let disorderFilter = '';
+let allUserLoginData = [];   // cached for expand rows
+let debounceTimers  = {};
+
+// ──────────────────────────────────────────────
+//  UTILITIES
+// ──────────────────────────────────────────────
+function debounce(fn, ms) {
+  const key = fn.name || 'fn';
+  return function(...args) {
+    clearTimeout(debounceTimers[key]);
+    debounceTimers[key] = setTimeout(() => fn(...args), ms);
+  };
+}
+
+function loading(show) {
+  document.getElementById('loadingOverlay').classList.toggle('show', show);
+}
+
+function toast(msg, type = 'success') {
+  const area = document.getElementById('toastArea');
+  const el   = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span> ${msg}`;
+  area.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+async function apiFetch(path, params = {}) {
+  const qs = new URLSearchParams(params).toString();
+  const url = `${API}/api/${path}${qs ? '?' + qs : ''}`;
+  const res = await fetch(url, { credentials: 'include' });
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+function disorderBadge(d) {
+  if (!d || d === 'None') return `<span class="badge badge-none">Normal</span>`;
+  if (d === 'Insomnia')   return `<span class="badge badge-insomnia">Insomnia</span>`;
+  if (d === 'Sleep Apnea') return `<span class="badge badge-apnea">Sleep Apnea</span>`;
+  return `<span class="badge badge-info">${d}</span>`;
+}
+
+function statusBadge(s) {
+  return s === 'success'
+    ? `<span class="badge badge-success">✓ Success</span>`
+    : `<span class="badge badge-danger">✗ Failed</span>`;
+}
+
+function roleBadge(r) {
+  const m = { admin:'badge-info', doctor:'badge-warning', patient:'badge-success' };
+  return `<span class="badge ${m[r]||'badge-info'}">${r}</span>`;
+}
+
+function scoreColor(s) {
+  if (s >= 70) return 'var(--green)';
+  if (s >= 45) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function clearFilters(prefix) {
+  document.querySelectorAll(`#filter-bar [id^="${prefix}-"]`).forEach(el => {
+    if (el.tagName === 'SELECT') el.value = '';
+    else el.value = '';
+  });
+  // also try by id convention
+  ['username','status','from','to','disorder'].forEach(k => {
+    const el = document.getElementById(`${prefix}-${k}`);
+    if (el) el.tagName === 'SELECT' ? el.value = '' : el.value = '';
+  });
+}
+
+function g(id) { return document.getElementById(id); }
+
+// Clock
+setInterval(() => {
+  const now = new Date();
+  g('clock').textContent = now.toLocaleTimeString('en-IN');
+}, 1000);
+
+// ──────────────────────────────────────────────
+//  NAVIGATION
+// ──────────────────────────────────────────────
+const VIEW_TITLES = {
+  'dashboard':       'Dashboard',
+  'login-history':   'Login History',
+  'user-management': 'User Management',
+  'disorder-summary':'Disorder Summary',
+  'all-predictions': 'All Predictions',
+};
+const VIEW_LOADERS = {
+  'dashboard':       loadDashboard,
+  'login-history':   loadLoginHistory,
+  'user-management': loadUsers,
+  'disorder-summary':loadDisorderSummary,
+  'all-predictions': loadAllPredictions,
+};
+
+function switchView(name, el) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  g(`view-${name}`).classList.add('active');
+  if (el) el.classList.add('active');
+  g('pageTitle').textContent = VIEW_TITLES[name] || name;
+  VIEW_LOADERS[name]?.();
+}
+
+// ──────────────────────────────────────────────
+//  DASHBOARD
+// ──────────────────────────────────────────────
+async function loadDashboard() {
+  loading(true);
+  try {
+    const [dash, logs] = await Promise.all([
+      apiFetch('admin/dashboard'),
+      apiFetch('admin/login-logs', { limit: 20 })
+    ]);
+    renderKPIs(dash.kpis, dash.disorder_distribution);
+    renderDisorderDonut(dash.disorder_distribution);
+    renderLoginChart(dash.daily_logins);
+    renderRecentLogins(logs);
+  } catch(e) {
+    toast('Failed to load dashboard: ' + e.message, 'error');
+  }
+  loading(false);
+}
+
+function renderKPIs(kpis, dist) {
+  const total = Object.values(dist).reduce((a,b)=>a+b,0);
+  const items = [
+    { label:'Total Users',   value: kpis.total_users,   sub:'registered',       icon:'👥', color:'var(--accent)' },
+    { label:'Total Preds',   value: kpis.total_preds,   sub:'predictions made', icon:'🧠', color:'var(--accent2)' },
+    { label:'Logins Today',  value: kpis.active_today,  sub:'unique users',     icon:'📡', color:'var(--green)' },
+    { label:'Total Logins',  value: kpis.total_logins,  sub:'successful',       icon:'🔐', color:'var(--yellow)' },
+    { label:'Failed Logins', value: kpis.failed_logins, sub:'attempts',         icon:'🚫', color:'var(--red)' },
+  ];
+  g('kpiGrid').innerHTML = items.map(({label,value,sub,icon,color}) => `
+    <div class="kpi-card" style="--accent-line:${color}">
+      <div class="kpi-icon">${icon}</div>
+      <div class="kpi-label">${label}</div>
+      <div class="kpi-value" style="color:${color}">${value ?? '—'}</div>
+      <div class="kpi-sub">${sub}</div>
+    </div>
+  `).join('');
+}
+
+function renderDisorderDonut(dist) {
+  const canvas = g('donutCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const colors = {
+    'None':'#22d3a0', 'Insomnia':'#fbbf24', 'Sleep Apnea':'#f43f5e', 'Unknown':'#6378ff'
+  };
+  const entries = Object.entries(dist);
+  const total   = entries.reduce((s,[,v])=>s+v, 0);
+  if (!total) return;
+  let start = -Math.PI/2;
+  const cx=70, cy=70, r=58, ri=36;
+  ctx.clearRect(0,0,140,140);
+  entries.forEach(([label,val]) => {
+    const angle = (val/total)*Math.PI*2;
+    ctx.beginPath();
+    ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r,start,start+angle);
+    ctx.closePath();
+    ctx.fillStyle = colors[label] || '#6378ff';
+    ctx.fill();
+    start += angle;
+  });
+  ctx.beginPath();
+  ctx.arc(cx,cy,ri,0,Math.PI*2);
+  ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg2') || '#0d0f1c';
+  ctx.fill();
+  // center text
+  ctx.fillStyle = '#e2e8f0';
+  ctx.font = 'bold 20px Syne, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total, cx, cy);
+
+  g('donutLegend').innerHTML = entries.map(([label,val]) => `
+    <div class="legend-item">
+      <div class="legend-dot" style="background:${colors[label]||'#6378ff'}"></div>
+      <span style="color:#e2e8f0;font-size:.8rem">${label === 'None' ? 'Normal' : label}</span>
+      <span style="color:var(--muted);font-size:.78rem;margin-left:4px">(${val})</span>
+    </div>
+  `).join('');
+}
+
+function renderLoginChart(daily) {
+  const canvas = g('loginChart');
+  if (!canvas || !daily?.length) return;
+  const ctx = canvas.getContext('2d');
+  const W=canvas.width, H=canvas.height, pad=30;
+  ctx.clearRect(0,0,W,H);
+  const maxVal = Math.max(...daily.map(d=>d.count), 1);
+  const step   = (W - pad*2) / (daily.length - 1 || 1);
+  const points = daily.map((d,i) => ({
+    x: pad + i*step,
+    y: H - pad - ((d.count/maxVal)*(H-pad*2))
+  }));
+  // Area
+  const grad = ctx.createLinearGradient(0,0,0,H);
+  grad.addColorStop(0,'rgba(99,120,255,.3)');
+  grad.addColorStop(1,'rgba(99,120,255,0)');
+  ctx.beginPath();
+  ctx.moveTo(points[0].x, H-pad);
+  points.forEach(p => ctx.lineTo(p.x, p.y));
+  ctx.lineTo(points[points.length-1].x, H-pad);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+  // Line
+  ctx.beginPath();
+  ctx.strokeStyle = '#6378ff';
+  ctx.lineWidth = 2;
+  points.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+  ctx.stroke();
+  // Dots
+  points.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x,p.y,3,0,Math.PI*2);
+    ctx.fillStyle = '#6378ff';
+    ctx.fill();
+  });
+  // Labels (show every nth)
+  ctx.fillStyle = '#64748b';
+  ctx.font = '9px DM Mono, monospace';
+  ctx.textAlign = 'center';
+  const nth = Math.ceil(daily.length/7);
+  daily.forEach((d,i) => {
+    if (i % nth === 0) ctx.fillText(d.date?.slice(5), points[i].x, H-8);
+  });
+}
+
+function renderRecentLogins(logs) {
+  const tbody = g('recentLoginTable');
+  g('recentLoginCount').textContent = `${logs.length} entries`;
+  if (!logs.length) { tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted)">No recent logins</td></tr>`; return; }
+  tbody.innerHTML = logs.map(l => `
+    <tr>
+      <td><strong>${l.username}</strong></td>
+      <td>${roleBadge(l.role)}</td>
+      <td style="font-family:var(--font-mono);font-size:.78rem">${l.date}</td>
+      <td style="font-family:var(--font-mono);font-size:.78rem;color:var(--accent)">${l.time}</td>
+      <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">${l.ip_address||'—'}</td>
+      <td>${statusBadge(l.status)}</td>
+    </tr>
+  `).join('');
+}
+
+// ──────────────────────────────────────────────
+//  LOGIN HISTORY VIEW
+// ──────────────────────────────────────────────
+function buildLoginParams() {
+  return {
+    username:  g('lh-username')?.value||'',
+    status:    g('lh-status')?.value||'',
+    date_from: g('lh-from')?.value||'',
+    date_to:   g('lh-to')?.value||'',
+  };
+}
+
+async function loadLoginHistory() {
+  loading(true);
+  try {
+    const params = buildLoginParams();
+    const logs   = await apiFetch('admin/login-logs', params);
+    const tbody  = g('loginHistoryTable');
+    const empty  = g('lhEmpty');
+    g('lhCount').textContent = `${logs.length} records`;
+    if (!logs.length) {
+      tbody.innerHTML = ''; empty.style.display = 'block'; loading(false); return;
+    }
+    empty.style.display = 'none';
+    tbody.innerHTML = logs.map((l,i) => `
+      <tr>
+        <td style="color:var(--muted);font-family:var(--font-mono)">${i+1}</td>
+        <td><strong>${l.username}</strong></td>
+        <td style="color:var(--muted);font-size:.78rem">${l.email}</td>
+        <td>${roleBadge(l.role)}</td>
+        <td style="font-family:var(--font-mono);font-size:.78rem">${l.date}</td>
+        <td style="font-family:var(--font-mono);font-size:.78rem;color:var(--accent);font-weight:600">${l.time}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">${l.ip_address||'—'}</td>
+        <td>${statusBadge(l.status)}</td>
+        <td class="wrap" style="color:var(--muted);font-size:.72rem">${l.user_agent||'—'}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    toast('Failed to load login logs: ' + e.message, 'error');
+  }
+  loading(false);
+}
+
+// ──────────────────────────────────────────────
+//  USER MANAGEMENT (with expandable login history)
+// ──────────────────────────────────────────────
+async function loadUsers() {
+  loading(true);
+  try {
+    const search = g('um-search')?.value||'';
+    const role   = g('um-role')?.value||'';
+    let users    = await apiFetch('admin/users');
+    if (search) users = users.filter(u => u.username.toLowerCase().includes(search.toLowerCase()) || u.email.toLowerCase().includes(search.toLowerCase()));
+    if (role)   users = users.filter(u => u.role === role);
+    // Also fetch per-user login data
+    allUserLoginData = await apiFetch('admin/user-login-stats');
+    renderUserTable(users);
+  } catch(e) {
+    toast('Failed to load users: '+e.message,'error');
+  }
+  loading(false);
+}
+
+function renderUserTable(users) {
+  const tbody = g('userTable');
+  const empty = g('umEmpty');
+  g('umCount').textContent = `${users.length} users`;
+  if (!users.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display = 'none';
+  tbody.innerHTML = users.map(u => {
+    const loginData = allUserLoginData.find(d=>d.user_id===u.id);
+    const history   = loginData?.login_history || [];
+    const hasExpand = history.length > 0;
+    return `
+      <tr>
+        <td>
+          ${hasExpand ? `<button class="expand-btn" onclick="toggleExpand(${u.id},this)" title="View login history">▶</button>` : '<span style="color:var(--border)">—</span>'}
+        </td>
+        <td style="font-family:var(--font-mono);color:var(--muted)">${u.id}</td>
+        <td><strong>${u.username}</strong></td>
+        <td style="color:var(--muted);font-size:.8rem">${u.email}</td>
+        <td>${roleBadge(u.role)}</td>
+        <td>${u.is_active ? '<span class="badge badge-success">Active</span>' : '<span class="badge badge-danger">Inactive</span>'}</td>
+        <td style="font-family:var(--font-mono);text-align:center">${u.pred_count}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">${u.created_at}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${u.last_login}</td>
+        <td style="font-family:var(--font-mono);font-size:.72rem;color:var(--muted)">${u.last_login_ip||'—'}</td>
+        <td>
+          <div style="display:flex;gap:6px">
+            <button class="btn btn-sm ${u.is_active ? 'btn-danger' : 'btn-success'}" onclick="toggleUser(${u.id}, this)">
+              ${u.is_active ? 'Deactivate' : 'Activate'}
+            </button>
+            ${u.role!=='admin' ? `<button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">Delete</button>` : ''}
+          </div>
+        </td>
+      </tr>
+      <tr class="expand-row" id="expand-row-${u.id}">
+        <td colspan="11">
+          <div class="expand-content">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">
+                LOGIN HISTORY — ${u.username} &nbsp;|&nbsp;
+                <span style="color:var(--green)">${loginData?.successful_logins||0} success</span>
+                &nbsp;/ <span style="color:var(--red)">${loginData?.failed_logins||0} failed</span>
+                &nbsp;/ ${loginData?.total_logins||0} total
+              </span>
+            </div>
+            <div class="login-timeline">
+              ${history.length ? history.map(h=>`
+                <div class="timeline-entry ${h.status}">
+                  <span class="timeline-date">${h.date}</span>
+                  <span class="timeline-time">${h.time}</span>
+                  <span class="timeline-ip">📡 ${h.ip}</span>
+                  <span class="timeline-status">${statusBadge(h.status)}</span>
+                </div>
+              `).join('') : '<span style="color:var(--muted);font-size:.8rem">No logins yet.</span>'}
+            </div>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function toggleExpand(userId, btn) {
+  const row = g(`expand-row-${userId}`);
+  const open = row.classList.toggle('open');
+  btn.classList.toggle('open', open);
+}
+
+async function toggleUser(uid, btn) {
+  try {
+    const res = await fetch(`${API}/api/admin/users/${uid}/toggle`, { method:'POST', credentials:'include' });
+    const data = await res.json();
+    toast(`User ${data.is_active ? 'activated' : 'deactivated'}`);
+    loadUsers();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+async function deleteUser(uid) {
+  if (!confirm('Permanently delete this user and all their data?')) return;
+  try {
+    await fetch(`${API}/api/admin/users/${uid}/delete`, { method:'DELETE', credentials:'include' });
+    toast('User deleted');
+    loadUsers();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ──────────────────────────────────────────────
+//  DISORDER SUMMARY
+// ──────────────────────────────────────────────
+let currentDisorderFilter = '';
+function filterByDisorder(d) {
+  currentDisorderFilter = d;
+  document.querySelectorAll('.d-card').forEach(c => {
+    c.classList.toggle('selected', (c.dataset.type==='All' && !d) || c.dataset.type===d);
+  });
+  loadDisorderSummary();
+}
+
+async function loadDisorderSummary() {
+  loading(true);
+  try {
+    const params = {
+      disorder: currentDisorderFilter,
+      username: g('ds-username')?.value||'',
+    };
+    const data = await apiFetch('admin/user-disorder-summary', params);
+
+    // Update totals in cards
+    const totals = { none:0, insomnia:0, apnea:0, total:0 };
+    data.forEach(u => {
+      totals.none     += u.none_count;
+      totals.insomnia += u.insomnia_count;
+      totals.apnea    += u.apnea_count;
+      totals.total    += u.total;
+    });
+    g('ds-all').textContent     = data.length;
+    g('ds-none').textContent    = totals.none;
+    g('ds-insomnia').textContent = totals.insomnia;
+    g('ds-apnea').textContent   = totals.apnea;
+    g('dsCount').textContent    = `${data.length} users`;
+
+    const tbody = g('disorderTable');
+    const empty = g('dsEmpty');
+    if (!data.length) { tbody.innerHTML=''; empty.style.display='block'; loading(false); return; }
+    empty.style.display = 'none';
+
+    tbody.innerHTML = data.map(u => {
+      const maxVal = Math.max(u.total, 1);
+      const nPct   = Math.round((u.none_count/maxVal)*100);
+      const iPct   = Math.round((u.insomnia_count/maxVal)*100);
+      const aPct   = Math.round((u.apnea_count/maxVal)*100);
+      return `
+        <tr>
+          <td><strong>${u.username}</strong></td>
+          <td style="color:var(--muted);font-size:.78rem">${u.email}</td>
+          <td>${roleBadge(u.role)}</td>
+          <td style="font-family:var(--font-mono);font-weight:600">${u.total}</td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:60px;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+                <div style="width:${nPct}%;height:100%;background:var(--green);border-radius:4px"></div>
+              </div>
+              <span class="badge badge-none">${u.none_count}</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:60px;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+                <div style="width:${iPct}%;height:100%;background:var(--yellow);border-radius:4px"></div>
+              </div>
+              <span class="badge badge-insomnia">${u.insomnia_count}</span>
+            </div>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:60px;height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+                <div style="width:${aPct}%;height:100%;background:var(--red);border-radius:4px"></div>
+              </div>
+              <span class="badge badge-apnea">${u.apnea_count}</span>
+            </div>
+          </td>
+          <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--muted)">${u.last_prediction||'—'}</td>
+        </tr>
+      `;
+    }).join('');
+  } catch(e) {
+    toast('Failed: '+e.message,'error');
+  }
+  loading(false);
+}
+
+// ──────────────────────────────────────────────
+//  ALL PREDICTIONS
+// ──────────────────────────────────────────────
+function buildPredParams() {
+  return {
+    disorder:  g('ap-disorder')?.value||'',
+    username:  g('ap-username')?.value||'',
+    date_from: g('ap-from')?.value||'',
+    date_to:   g('ap-to')?.value||'',
+  };
+}
+
+async function loadAllPredictions() {
+  loading(true);
+  try {
+    const preds = await apiFetch('admin/predictions', buildPredParams());
+    const tbody = g('predTable');
+    const empty = g('apEmpty');
+    g('apCount').textContent = `${preds.length} records`;
+    if (!preds.length) { tbody.innerHTML=''; empty.style.display='block'; loading(false); return; }
+    empty.style.display = 'none';
+    tbody.innerHTML = preds.map((p,i)=>`
+      <tr>
+        <td style="color:var(--muted);font-family:var(--font-mono)">${i+1}</td>
+        <td><strong>${p.username}</strong></td>
+        <td style="font-family:var(--font-mono);font-size:.75rem">${p.date}</td>
+        <td style="font-family:var(--font-mono);font-size:.75rem;color:var(--accent)">${p.time}</td>
+        <td>${disorderBadge(p.prediction)}</td>
+        <td style="font-family:var(--font-mono);font-size:.8rem;color:var(--accent2)">${p.confidence}%</td>
+        <td>
+          <span style="font-family:var(--font-mono);font-size:.8rem;color:${scoreColor(p.sleep_score)};font-weight:600">
+            ${p.sleep_score}
+          </span>
+        </td>
+        <td style="font-family:var(--font-mono)">${p.age}</td>
+        <td>${p.gender}</td>
+        <td style="font-family:var(--font-mono)">${p.sleep_duration}h</td>
+        <td style="font-family:var(--font-mono)">${p.stress_level}/10</td>
+        <td style="font-size:.78rem">${p.bmi_category}</td>
+        <td style="font-family:var(--font-mono)">${p.heart_rate}</td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    toast('Failed: '+e.message,'error');
+  }
+  loading(false);
+}
+
+// ──────────────────────────────────────────────
+//  CSV DOWNLOADS
+// ──────────────────────────────────────────────
+function downloadCSV(endpoint, params={}) {
+  const qs  = new URLSearchParams(params).toString();
+  const url = `${API}/api/admin/${endpoint}/download${qs ? '?' + qs : ''}`;
+  const a   = document.createElement('a');
+  a.href    = url; a.target = '_blank'; a.click();
+  toast('Download started!');
+}
+
+// ──────────────────────────────────────────────
+//  LOGOUT
+// ──────────────────────────────────────────────
+async function logout() {
+  await fetch(`${API}/api/logout`, { method:'POST', credentials:'include' });
+  window.location.href = '/';
+}
+
+// ──────────────────────────────────────────────
+//  INIT — check auth, then load dashboard
+// ──────────────────────────────────────────────
+async function init() {
+  try {
+    const me = await apiFetch('me');
+    if (me.role !== 'admin') {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:16px">
+          <div style="font-size:3rem">🚫</div>
+          <div style="font-family:var(--font-head);font-size:1.5rem;color:var(--red)">Admin Access Required</div>
+          <a href="/" style="color:var(--accent)">← Back to App</a>
+        </div>`;
+      return;
+    }
+  } catch(e) {
+    window.location.href = '/';
+    return;
+  }
+  loadDashboard();
+}
+
+init();
+</script>
+</body>
+</html>
