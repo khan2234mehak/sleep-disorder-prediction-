@@ -23,7 +23,7 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
-app.config['SECRET_KEY'] = 'sleep_disorder_secret_2024_change_in_prod'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '740cbc17464eb64ed424445c6bdb78ce56805e9f5eeff6e913e9c114671a3df8')
 
 DB_USER     = os.environ.get('DB_USER', 'root')
 DB_PASSWORD = os.environ.get('DB_PASSWORD', 'yourpassword')
@@ -943,10 +943,11 @@ def initialize_database():
         with app.app_context():
             db.create_all()
             if not User.query.filter_by(role='admin').first():
-                hashed = bcrypt.generate_password_hash('Admin@123').decode('utf-8')
+               admin_pw = os.environ.get('ADMIN_PASSWORD', 'kK1oLKA6Fk@AXi')
+                hashed = bcrypt.generate_password_hash(admin_pw).decode('utf-8')
                 db.session.add(User(username='admin',email='admin@sleepsense.ai',password=hashed,role='admin'))
                 db.session.commit()
-                print('Default admin created: admin@sleepsense.ai / Admin@123')
+                print('Default admin created: admin@sleepsense.ai')
         print('Database ready.')
     except Exception as exc:
         if 'mysql' in app.config['SQLALCHEMY_DATABASE_URI']:
@@ -959,4 +960,4 @@ def initialize_database():
 
 if __name__ == '__main__':
     initialize_database()
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=os.environ.get('FLASK_DEBUG', '0') == '1', host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
