@@ -943,7 +943,7 @@ def initialize_database():
         with app.app_context():
             db.create_all()
             if not User.query.filter_by(role='admin').first():
-               admin_pw = os.environ.get('ADMIN_PASSWORD', 'kK1oLKA6Fk@AXi')
+                admin_pw = os.environ.get('ADMIN_PASSWORD', 'kK1oLKA6Fk@AXi')
                 hashed = bcrypt.generate_password_hash(admin_pw).decode('utf-8')
                 db.session.add(User(username='admin',email='admin@sleepsense.ai',password=hashed,role='admin'))
                 db.session.commit()
