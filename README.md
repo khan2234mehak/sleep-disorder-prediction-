@@ -4,6 +4,10 @@ A full-stack Machine Learning web application that predicts sleep disorders usin
 
 The system features **secure user authentication**, **role-based access control (Admin, Doctor, and Patient)**, **prediction history tracking**, **dashboard analytics**, and **RESTful APIs**. Built with **Flask**, **Scikit-learn**, and **SQLite**, SleepSense AI demonstrates an end-to-end machine learning workflow—from data preprocessing and model training to deployment in a production-ready web application.
 
+## 🚀 Live Demo
+
+[👉 Click here to use SleepSense AI](https://sleep-disorder-prediction-ubfv.onrender.com)
+
 ## 🚀 Features
 
 ### 🤖 Machine Learning
